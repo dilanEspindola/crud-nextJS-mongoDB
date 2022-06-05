@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button, Form, Grid } from "semantic-ui-react";
 import { useRouter } from "next/router";
 
@@ -27,6 +27,24 @@ export default function NewTask() {
     });
   };
 
+  const getTaks = async () => {
+    const res = await fetch(
+      `http://localhost:3000/api/tasks/${router.query.id}`
+    );
+    const task = await res.json();
+    setNewTask({
+      ...task,
+      title: task.title,
+      description: task.description,
+    });
+  };
+
+  useEffect(() => {
+    if (router.query.id) {
+      getTaks();
+    }
+  }, [router.query.id]);
+
   const createTask = async (task) => {
     try {
       await fetch("http://localhost:3000/api/tasks", {
@@ -36,19 +54,38 @@ export default function NewTask() {
         },
         body: JSON.stringify(task),
       });
-      router.push("/");
     } catch (error) {
       console.log(error);
     }
   };
 
-  const handleSubmit = (e) => {
+  const updateTask = async () => {
+    try {
+      await fetch(`http://localhost:3000/api/tasks/${router.query.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newTask),
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     let errors = validate();
 
     if (Object.keys(errors).length) setErrors(errors);
 
-    createTask(newTask);
+    if (router.query.id) {
+      await updateTask();
+    } else {
+      await createTask(newTask);
+    }
+
+    router.push("/");
   };
 
   return (
@@ -60,7 +97,7 @@ export default function NewTask() {
     >
       <Grid.Row>
         <Grid.Column>
-          <h1>Create a Task</h1>
+          <h1>{router.query.id ? "Edit Task" : "Create a Task"}</h1>
           <Form onSubmit={handleSubmit}>
             <Form.Input
               label="Title"
@@ -72,6 +109,7 @@ export default function NewTask() {
                   ? { content: errors.title, pointing: "below" }
                   : null
               }
+              value={newTask.title}
             />
             <Form.TextArea
               label="Description"
@@ -83,8 +121,11 @@ export default function NewTask() {
                   ? { content: errors.description, pointing: "below" }
                   : null
               }
+              value={newTask.description}
             />
-            <Button primary>Save Task</Button>
+            <Button primary>
+              {router.query.id ? "Edit Task" : "Save Task"}
+            </Button>
           </Form>
         </Grid.Column>
       </Grid.Row>

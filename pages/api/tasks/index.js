@@ -5,7 +5,8 @@ dbConnect();
 
 export default async function handler(req, res) {
   if (req.method === "GET") {
-    return getTasks(res);
+    const Tasks = await Task.find();
+    return res.json(Tasks);
   }
 
   if (req.method === "POST") {
